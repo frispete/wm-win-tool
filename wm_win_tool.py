@@ -53,7 +53,7 @@ License:
 # vim:set et ts=8 sw=4:
 #
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 __author__ = 'Hans-Peter Jansen <hpj@urpla.net>'
 __license__ = 'GNU GPL 2 - see http://www.gnu.org/licenses/gpl2.txt for details'
 
