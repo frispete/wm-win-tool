@@ -19,22 +19,22 @@ by class or pattern, unless the previous state is idential or the operation
 is enforced.
 
 restore will restore the window positions, matched by class or pattern,
-and arg is either a timestamp from store list, or a relative index (eg. -1
-for the latest session store [default], -2 for the one before...).
+arg is either a timestamp from store list, or a relative index (eg. -1
+for the latest session [default], -2 for the one before...).
 
-storelist will just list the available session stores up to an optional
-maximum number of items, sorted by date.
+Note, that the selection parameters for store and restore should match.
+
+storelist will just list the available sessions up to an optional maximum
+number of items, sorted by date (descending).
 
 class and title are simple case sensitive wildcard pattern by default,
-that can be supplied multiple times to match a certain subset of windows.
-option regexp switches to regular expression matching. Make sure to
-properly quote such arguments.
+that can be supplied multiple times to match a subset of windows. regexp
+switches to regular expression matching. Make sure to properly quote such
+arguments.
 
-the bracket pattern just matches the part of the window title in square
-brackets.
-
-eg: [title] long title will just match [title]. This is most helpful
-in conjunction with Firefox and the Window Titler addon:
+the bracket option just matches the part of the window title in square
+brackets, eg.: <[title] long title> will just match <[title]>. This is most
+helpful in conjunction with Firefox and the Window Titler addon:
 https://github.com/tpamula/webextension-window-titler
 
 The commands store and restore could be triggered, when executed with
@@ -43,19 +43,20 @@ symlinks to %(origname)s:
    ln -s %(origname)s.py wm-win-store.py
    ln -s %(origname)s.py wm-win-restore.py
 
-Copyright:
-(c)2020 by %(author)s
+These shortcuts use some hardcoded defaults: --bracket and --verbose.
 
-License:
-%(license)s
+Homepage: %(homepage)s
+Copyright: (c)2020 by %(author)s
+License: %(license)s
 '''
 #
 # vim:set et ts=8 sw=4:
 #
 
-__version__ = '0.1.3'
+__version__ = '0.1.4'
 __author__ = 'Hans-Peter Jansen <hpj@urpla.net>'
-__license__ = 'GNU GPL 2 - see http://www.gnu.org/licenses/gpl2.txt for details'
+__license__ = 'GNU GPL 2 - see https://www.gnu.org/licenses/gpl2.txt for details'
+__homepage__ = 'https://github.com/frispete/wm-win-tool'
 
 
 import os
@@ -83,6 +84,7 @@ class gpar:
     version = __version__
     author = __author__
     license = __license__
+    homepage = __homepage__
     loglevel = logging.WARNING
     force = False
     bracket = False
