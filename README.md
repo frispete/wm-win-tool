@@ -17,8 +17,8 @@ Usage:
 ```
 wm-win-tool [-hVvfbr] [-c class][-t title] store
 wm-win-tool [-hVvfbr] [-c class][-t title] restore [arg]
-wm-win-tool [-hVvb][-c class][-t title] winlist [max]
-wm-win-tool [-hVv] storelist [max]
+wm-win-tool [-hVvb][-c class][-t title] curlist [max]
+wm-win-tool [-hVv] list [max]
        -h, --help           this message
        -V, --version        print version and exit
        -v, --verbose        verbose mode (cumulative)
@@ -29,19 +29,33 @@ wm-win-tool [-hVv] storelist [max]
        -t, --title title    match window title
 ```
 
-`--class` and `--title` specify simple case sensitive wildcard pattern by
-default, that can be supplied multiple times to select a subset of windows
-to be stored. The `--regexp` option switches to regular expression matching.
-Make sure to properly quote such arguments.
+Commands
+--------
+`store` will save the geometry, desktop, and shaded state of selected windows
+by class or pattern, unless the previous state is unchanged or the operation
+is enforced with `--force`.
+
+`restore` will restore the window geometries, matched by class or pattern,
+`arg` is either a timestamp from the store list, or a relative index (eg. -1
+for the latest session [default], -2 for the one before...).
 
 Note, that the selection parameters for store and restore *should* match.
 
-`restore` will restore the window properties, selected by class or pattern,
-and `arg` is either a timestamp from `storelist`, or a relative index (eg.
--1 for the latest session [default], -2 for the second latest...).
+Use the `curlist` command to test your current selection options.
+
+`list` shows the available sessions up to an optional maximum number of items
+to be restored, sorted by date (descending).
+
+Options
+-------
+`--class` and `--title` are simple case sensitive wildcard pattern, that can
+be supplied multiple times to match a subset of windows. `--regexp` switches
+them to regular expression matching. Make sure to properly quote such
+arguments.
 
 The `--bracket` option just matches the part of the window title in square
-brackets. This is most useful in conjunction with Firefox and the
+brackets, eg.: `[title] long title` will just match `[title]`. This is most
+useful in conjunction with Firefox and the
 [Window Titler addon](https://github.com/tpamula/webextension-window-titler).
 
 Example Usage
@@ -105,7 +119,7 @@ file option might be useful (TBD).
 
 The session data is saved in `~/local/share/wm-win-tool`.
 
-In pathological cases (where I count in for sure), it might be advantageous 
+In pathological cases (where I count in for sure), it might be advantageous
 to exclude Firefox from the window manager session restore completely. kwin5
 is configurable as such. When executing Firefox after reboot, it will open all
 session windows on your **current** desktop then. Run `wm-win-restore` and *be
