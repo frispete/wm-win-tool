@@ -2,8 +2,8 @@
 '''
 Usage: %(origname)s [-hVvfbr] [-c class][-t title] store
        %(origname)s [-hVvfbr] [-c class][-t title] restore [arg]
-       %(origname)s [-hVvb] [-c class][-t title] winlist [max]
-       %(origname)s [-hVv] storelist [max]
+       %(origname)s [-hVvb] [-c class][-t title] curlist [max]
+       %(origname)s [-hVv] list [max]
 
        -h, --help           this message
        -V, --version        print version and exit
@@ -14,28 +14,35 @@ Usage: %(origname)s [-hVvfbr] [-c class][-t title] store
        -c, --class class    match window class
        -t, --title title    match window title
 
-store will save the window positions, desktop, and shaded state, selected
-by class or pattern, unless the previous state is idential or the operation
+commands:
+
+store will save the geometry, desktop, and shaded state of selected windows
+by class or pattern, unless the previous state is unchanged or the operation
 is enforced.
 
-restore will restore the window positions, matched by class or pattern,
-arg is either a timestamp from store list, or a relative index (eg. -1
+restore will restore the window geometries, matched by class or pattern,
+arg is either a timestamp from the store list, or a relative index (eg. -1
 for the latest session [default], -2 for the one before...).
 
 Note, that the selection parameters for store and restore should match.
 
-storelist will just list the available sessions up to an optional maximum
-number of items, sorted by date (descending).
+Use the curlist command to test your current selection options.
 
-class and title are simple case sensitive wildcard pattern by default,
-that can be supplied multiple times to match a subset of windows. regexp
-switches to regular expression matching. Make sure to properly quote such
-arguments.
+list shows the available sessions up to an optional maximum number of items
+to be restored, sorted by date (descending).
+
+options:
+
+class and title are simple case sensitive wildcard pattern, that can be
+supplied multiple times to match a subset of windows. regexp switches them
+to regular expression matching. Make sure to properly quote such arguments.
 
 the bracket option just matches the part of the window title in square
 brackets, eg.: <[title] long title> will just match <[title]>. This is most
-helpful in conjunction with Firefox and the Window Titler addon:
+useful in conjunction with Firefox and the Window Titler addon:
 https://github.com/tpamula/webextension-window-titler
+
+notes:
 
 The commands store and restore could be triggered, when executed with
 symlinks to %(origname)s:
@@ -53,7 +60,7 @@ License: %(license)s
 # vim:set et ts=8 sw=4:
 #
 
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 __author__ = 'Hans-Peter Jansen <hpj@urpla.net>'
 __license__ = 'GNU GPL 2 - see https://www.gnu.org/licenses/gpl2.txt for details'
 __homepage__ = 'https://github.com/frispete/wm-win-tool'
@@ -168,7 +175,7 @@ def new_timestamp_filename(path, ext):
 
 
 def fdict(dct):
-    '''format a dict in a easy to read record presentation
+    '''format a dict in a easy to read presentation
        keys, starting with underscore are suppressed
        Note: only string types are allowed as keys
     '''
@@ -180,20 +187,18 @@ def fdict(dct):
     return '\n'.join(ret)
 
 
-class WinDuplicate(Exception):
-    '''WinDuplicate is raised from an attempt to add a window
-       with identical title and class to WinList
-    '''
-    def __init__(self, win):
-        self.win = win
-
-
 class WinNotFound(Exception):
     '''WinNotFound is raised from an attempt to remove a non
        existing window from WinList
     '''
     def __init__(self, win):
         self.win = win
+
+
+class WinDuplicate(WinNotFound):
+    '''WinDuplicate is raised from an attempt to add a window
+       with identical title and class to WinList
+    '''
 
 
 # https://docs.python.org/dev/library/functools.html#functools.total_ordering
@@ -230,7 +235,7 @@ class Win:
     @classmethod
     def _fromfile(cls, line):
         '''create instance from file representation'''
-        # on disk format (8 columns, ', ' separated) is missing a couple of fields 
+        # on disk format (8 columns, ', ' separated) is missing a couple of fields
         return Win(**dict(zip(cls._storefields,
                               line.split(', ', maxsplit = len(cls._storefields)-1))))
 
@@ -307,10 +312,13 @@ class WinList:
        - stores list to file
        - loads list from file
     '''
-    def __init__(self):
-        '''setup empty window list'''
+    def __init__(self, **kwargs):
+        '''setup empty window list, and call fromstr or fromfile, if requested'''
         self._fn = None
         self._wl = []
+        # KeyErrors are programming errors
+        for key, val in kwargs.items():
+            self.funcdisp[key](self, val)
 
     def fromstr(self, buf):
         '''load window list from string (output of wmctrl)'''
@@ -346,6 +354,12 @@ class WinList:
             return 0
         return len(self._wl)
 
+    # ctor kwargs dispatcher
+    funcdisp = {
+        'fromstr': fromstr,
+        'fromfile': fromfile,
+    }
+
     def tofile(self, fn):
         '''save window list to file'''
         self._fn = fn
@@ -377,13 +391,9 @@ class WinList:
         if other:
             for win in self._wl:
                 if not win.cmp_all(other.match(win)):
-                    #log.debug('%s <%s> differs:\n%s\nother:\n%s',
-                    #          win.title, win.cls, win, oth)
                     return False
             for oth in other._wl:
                 if not oth.cmp_all(self.match(oth)):
-                    #log.debug('%s <%s> differs here:\n%s\nother:\n%s',
-                    #          oth.title, oth.cls, win, oth)
                     return False
             # all windows in both lists are identical
             return True
@@ -451,34 +461,6 @@ def test_command(cmd, *args):
         return rc, '%s: failed with error: %s' % (cmdstr, buf)
 
 
-def wmctrl_list():
-    '''run wmctrl -lGpx, return WinList'''
-    log.info('collect window list')
-    winlist = WinList()
-    rc, buf = command('wmctrl', '-lGpx')
-    if rc == 0:
-        if winlist.fromstr(buf):
-            return winlist
-
-
-def wmctrl_move_to_desktop(winid, desktop):
-    '''run wmctrl -ir winid -t desktop'''
-    rc, _ = command('wmctrl', '-ir', winid, '-t', desktop)
-    return rc
-
-
-def wmctrl_adjust_geometry(winid, geostr):
-    '''run wmctrl -ir winid -e geostr'''
-    rc, _ = command('wmctrl', '-ir', winid, '-e', geostr)
-    return rc
-
-
-def wmctrl_toggle_shaded(winid):
-    '''run wmctrl -ir winid -b toggle,shaded'''
-    rc, _ = command('wmctrl', '-ir', winid, '-b', 'toggle,shaded')
-    return rc
-
-
 def xprop(winid, prop):
     '''run xprop for winid, return value of property'''
     rc, res = command('xprop', '-id', winid)
@@ -486,23 +468,37 @@ def xprop(winid, prop):
         for line in res.split('\n'):
             if not line:
                 continue
-            if line.startswith('_'):
-                log.debug(line)
             m = re.match('%s\(.*\) = (.*)' % prop, line)
             if m:
                 return m.group(1)
 
 
-def store_list(maxcnt = None):
-    '''fetch list of saved window lists, optional limit # of items'''
-    log.info('collect store list from %s', unexpanduser(gpar.storelistdir))
-    storelist = []
-    for fn in os.listdir(gpar.storelistdir):
-        if fnmatch.fnmatch(fn, '*.wmlst'):
-            storelist.append(fn)
-    if not maxcnt:
-        maxcnt = len(storelist)
-    return sorted(storelist)[-maxcnt:]
+def wmctrl_move_to_desktop(winid, desktop):
+    '''run wmctrl -ir winid -t desktop'''
+    return command('wmctrl', '-ir', winid, '-t', desktop)[0]
+
+
+def wmctrl_adjust_geometry(winid, geostr):
+    '''run wmctrl -ir winid -e geostr'''
+    return command('wmctrl', '-ir', winid, '-e', geostr)[0]
+
+
+def wmctrl_toggle_shaded(winid):
+    '''run wmctrl -ir winid -b toggle,shaded'''
+    return command('wmctrl', '-ir', winid, '-b', 'toggle,shaded')[0]
+
+
+def fetch_winlist():
+    '''run wmctrl -lGpx, filter selected, return WinList'''
+    log.info('fetch window list')
+    curlist = WinList()
+    rc, buf = command('wmctrl', '-lGpx')
+    if rc == 0:
+        # load from buffer
+        if curlist.fromstr(buf):
+            # and filter list
+            curlist = filter_winlist(curlist)
+    return curlist
 
 
 def filter_winlist(srclist):
@@ -554,34 +550,45 @@ def filter_winlist(srclist):
     return dstlist
 
 
+def store_filelist(maxcnt = None):
+    '''fetch list of saved window lists, optional limit # of items'''
+    log.info('collect store list from %s', unexpanduser(gpar.storelistdir))
+    storelist = []
+    for fn in os.listdir(gpar.storelistdir):
+        if fnmatch.fnmatch(fn, '*.wmlst'):
+            storelist.append(fn)
+    if not maxcnt:
+        maxcnt = len(storelist)
+    return sorted(storelist)[-maxcnt:]
+
+
 def store(args):
     '''store geometry of selected windows'''
-    winlist = wmctrl_list()
-    if not winlist:
-        exit(3, 'no windows in session')
-    winlist = filter_winlist(winlist)
+    curlist = fetch_winlist()
+    if not curlist:
+        exit(3, 'no match')
     # check duplicate list
-    slist = store_list(1)
-    if slist:
-        wmlstfn = slist.pop()
-        storelist = WinList()
-        if storelist.fromfile(os.path.join(gpar.storelistdir, wmlstfn)):
-            log.debug('check, if different from last store')
-            if winlist == storelist:
-                msg = gpar.force and '' or ': not saved'
-                log.info('%s is identical with this store%s', wmlstfn, msg)
-                if not gpar.force:
-                    return 0
+    try:
+        wmlstfn = store_filelist(1).pop()
+    except IndexError:
+        pass
+    else:
+        stolist = WinList(fromfile = os.path.join(gpar.storelistdir, wmlstfn))
+        if curlist == stolist:
+            msg = gpar.force and '' or ': not saved'
+            log.info("%s hasn't changed%s", wmlstfn, msg)
+            if not gpar.force:
+                return 0
 
-    if winlist:
-        for win in winlist:
+    if curlist:
+        for win in curlist:
             log.debug(repr(win))
         # save window list
         fn = new_timestamp_filename(gpar.storelistdir, '.wmlst')
-        winlist.tofile(fn)
-        log.info('%s stored [%s matches]', unexpanduser(fn), len(winlist))
+        curlist.tofile(fn)
+        log.info('%s stored [%s matches]', unexpanduser(fn), len(curlist))
     else:
-        log.warning('no matching windows')
+        log.warning('no match')
     return 0
 
 
@@ -602,7 +609,7 @@ def restore(args):
             ts = which
             which = None
     # list of saved window lists
-    slist = store_list()
+    slist = store_filelist()
     if not slist:
         exit(2, 'no stored sessions (yet), try store')
     # select list
@@ -613,7 +620,7 @@ def restore(args):
         except IndexError:
             exit(2, 'no such session: %s' % which)
     elif ts:
-        # try to match filename and timestamp
+        # try to match filename and timestamp (filename without extension)
         for fn in slist:
             if ts == fn:
                 wmlstfn = fn
@@ -625,47 +632,46 @@ def restore(args):
 
     if wmlstfn is None:
         exit(2, 'no such session: %s' % ts)
+
+    # session to restore located, apply it
     log.info('restore %s', wmlstfn)
-    winlist = wmctrl_list()
-    winlist = filter_winlist(winlist)
+    curlist = fetch_winlist()
     # load saved list, compare with current state, and adjust accordingly
-    storelist = WinList()
-    if storelist.fromfile(os.path.join(gpar.storelistdir, wmlstfn)):
-        for sto in storelist:
-            cur = winlist.match(sto)
-            if cur:
-                log.debug('stored:\n%s', sto)
-                log.debug('current:\n%s', cur)
-                if not cur.cmp_desktop(sto):
-                    log.info('move <%s> from desktop %s to desktop %s',
-                             cur.title, cur.desktop, sto.desktop)
-                    wmctrl_move_to_desktop(cur.winid, sto.desktop)
-                if not cur.cmp_geometry(sto):
-                    log.info('adjust geometry of <%s> from %s to %s',
-                             cur.title, cur.geostr, sto.geostr)
-                    wmctrl_adjust_geometry(cur.winid, sto.geostr)
-                if not cur.cmp_shaded(sto):
-                    log.info('adjust shaded state of <%s> from %s to %s',
-                             cur.title, cur.shaded, sto.shaded)
-                    wmctrl_toggle_shaded(cur.winid)
+    stolist = WinList(fromfile = os.path.join(gpar.storelistdir, wmlstfn))
+    for sto in stolist:
+        cur = curlist.match(sto)
+        if cur:
+            log.debug('stored:\n%s', sto)
+            log.debug('current:\n%s', cur)
+            if not cur.cmp_desktop(sto):
+                log.info('move <%s> from desktop %s to desktop %s',
+                         cur.title, cur.desktop, sto.desktop)
+                wmctrl_move_to_desktop(cur.winid, sto.desktop)
+            if not cur.cmp_geometry(sto):
+                log.info('adjust geometry of <%s> from %s to %s',
+                         cur.title, cur.geostr, sto.geostr)
+                wmctrl_adjust_geometry(cur.winid, sto.geostr)
+            if not cur.cmp_shaded(sto):
+                log.info('adjust shaded state of <%s> from %s to %s',
+                         cur.title, cur.shaded, sto.shaded)
+                wmctrl_toggle_shaded(cur.winid)
     return 0
 
 
-def winlist(args):
+def curlist(args):
     '''list selected windows'''
-    winlist = wmctrl_list()
-    if not winlist:
-        exit(3, 'no windows in session')
-    winlist = filter_winlist(winlist)
-    if winlist:
-        for win in winlist:
-            log.debug(repr(win))
-        winlist.tofile(1)
+    curlist = fetch_winlist()
+    if curlist:
+        for cur in curlist:
+            log.debug(repr(cur))
+        curlist.tofile(1)
+    else:
+        exit(3, 'no match')
     return 0
 
 
-def storelist(args):
-    '''list stored geometry files'''
+def liststore(args):
+    '''list available stored session files'''
     try:
         maxcnt = args.pop(0)
     except IndexError:
@@ -674,10 +680,14 @@ def storelist(args):
         try:
             maxcnt = int(maxcnt)
         except ValueError:
-            exit(2, 'invalid storelist max argument: <%s>' % maxcnt)
+            exit(2, 'invalid list max argument: <%s>' % maxcnt)
 
-    slist = store_list(maxcnt)
-    stdout('\n'.join(slist))
+    for fn in store_filelist(maxcnt):
+        if gpar.loglevel <= logging.INFO:
+            stolist = WinList(fromfile = os.path.join(gpar.storelistdir, fn))
+            stdout('%s [%s items]' % (fn, len(stolist)))
+        else:
+            stdout(fn)
     return 0
 
 
@@ -731,8 +741,8 @@ def main():
     disp = {
         'store': store,
         'restore': restore,
-        'winlist': winlist,
-        'storelist': storelist,
+        'curlist': curlist,
+        'list': liststore,
     }
 
     if not args:
