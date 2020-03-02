@@ -9,8 +9,8 @@ its session properly under usual X11 window managers (KF5 in my case).
 Note, that the problem is well known, but unfortunately, little has been done
 in the last 13 years to [solve this issue](https://bugzilla.mozilla.org/show_bug.cgi?id=372650).
 
-This is an attempt to solve it manually/externally, but might prove useful for
-other constellations as well.
+This program is an humble attempt to solve it manually/externally, but might
+prove useful for other constellations as well.
 
 Usage:
 ------
@@ -29,34 +29,34 @@ wm-win-tool [-hVv] storelist [max]
        -t, --title title    match window title
 ```
 
-class and title are simple case sensitive wildcard pattern by default, that
-can be supplied multiple times to match a certain subset of windows. The 
-`regexp` option switches to regular expression matching. Make sure to properly
-quote such arguments.
+`--class` and `--title` specify simple case sensitive wildcard pattern by
+default, that can be supplied multiple times to select a subset of windows
+to be stored. The `--regexp` option switches to regular expression matching.
+Make sure to properly quote such arguments.
 
-Note, that the selection parameters for store and restore should match.
+Note, that the selection parameters for store and restore *should* match.
 
-restore will restore the window positions, matched by class or pattern, and
-arg is either a timestamp from store list, or a relative index (eg. -1 for
-the latest session store [default], -2 for the second latest...).
+`restore` will restore the window properties, selected by class or pattern,
+and `arg` is either a timestamp from `storelist`, or a relative index (eg.
+-1 for the latest session [default], -2 for the second latest...).
 
-The bracket option just matches the part of the window title in square
+The `--bracket` option just matches the part of the window title in square
 brackets. This is most useful in conjunction with Firefox and the
 [Window Titler addon](https://github.com/tpamula/webextension-window-titler).
 
 Example Usage
 -------------
-In order to save Firefox sessions: install the `Window Titler addon` and
-supply all windows with a **unique** name, that should appear in square
-brackets in front of the window title, that changes depending on which tab
-is actived.
+In order to save your Firefox sessions: install the `Window Titler addon` and
+supply all windows with a **unique** title, that should appear in square
+brackets in front of the window title, while the normal window title changes
+depending on which tab is actived.
 
 Now saving a session is as easy as:
 ```
 wm-win-tool -vb store
 ```
 
-You can run this command as many times, as you want. As long as the session
+You can run this command as many times as you want. As long as the session
 wasn't changed meanwhile, it won't store a new session (unless the `--force`
 option is supplied).
 
@@ -69,12 +69,12 @@ geometry and shaded state applied.
 
 Install
 -------
-with pip:
+Using pip:
 ```
 $ pip install wm-win-tool
 ```
 
-from source:
+From source:
 ```
 $ wget https://files.pythonhosted.org/packages/source/w/wm-win-tool/wm-win-tool-<version>.tar.gz
 $ tar xvf wm-win-tool-<version>.tar.gz
@@ -92,15 +92,15 @@ setup.
 
 Final notes
 -----------
-The commands store and restore could be implicitly triggered, when executed
-via symlinks to `wm-win-tool`, eg:
+The commands `store` and `restore` could be implicitly triggered, when executed
+via symlinks to `wm-win-tool`, eg.:
 ```
 $ cd <whatever>/bin
 $ ln -s wm-win-tool wm-win-store
 $ ln -s wm-win-tool wm-win-restore
 ```
-These operation modes come with some hardcoded defaults: `bracket` and
-`verbose` for the most usual usage pattern. If that's not enough, a config
+These operation modes come with some hardcoded defaults: `--bracket` and
+`--verbose` for the most usual usage pattern. If that's not enough, a config
 file option might be useful (TBD).
 
 The session data is saved in `~/local/share/wm-win-tool`.
@@ -113,7 +113,7 @@ done*.
 
 If you plan to run `wm-win-store` from `crontab -e`, keep in mind, that most
 cron implementations suffer from variable expansion issues. Here is an
-example, that should work with Vixie Cron:
+example, that should work with Vixie cron:
 ```
 #PATH=$HOME/bin:/bin:/usr/bin	# won't work
 #XAUTHORITY=~/.Xauthority	# neither that
@@ -123,8 +123,8 @@ example, that should work with Vixie Cron:
 ```
 `AUTHORITY`is expanded from the shell in this case, which is necessary to
 operate properly. Depending on the way, you installed `wm-win-tool`, you might
-need to adjust the path to it as well. We also avoid using the symlink
-shortcut here due to its implicit verbosity level.
+need to adjust the path as well. We also avoid using the symlink shortcut
+here due to its implicit verbosity level.
 
 Some things are realized in a pretty `oldschool` way, eg. command line
 handling, but until the command line interface gets **significantly** more
