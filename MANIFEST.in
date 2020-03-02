@@ -1,0 +1,6 @@
+include *.md *.txt
+global-include *.py
+include update-date
+include LICENSE
+exclude .gitignore
+
