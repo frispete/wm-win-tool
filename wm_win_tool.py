@@ -438,6 +438,17 @@ def command(cmd, *args):
         return res.returncode, res.stdout
 
 
+def test_command(cmd, *args):
+    cmdstr = '%s %s' % (cmd, ' '.join(args))
+    try:
+        rc, buf = command(cmd, *args)
+    except OSError as e:
+        log.debug('%s: %s' % (cmdstr, e))
+        return -1, '%s: program not found' % cmdstr
+    else:
+        return rc, '%s: failed with error: %s' % (cmdstr, buf)
+
+
 def wmctrl_list():
     '''run wmctrl -lGpx, return WinList'''
     log.info('collect window list')
@@ -710,19 +721,10 @@ def main():
 
     setup_logging(gpar.loglevel)
 
-    rc, _ = command('wmctrl', '-h')
-    if rc:
-        exit(2, 'program wmctrl not found')
-
-    rc, _ = command('xprop', '-version')
-    if rc:
-        exit(2, 'program xprop not found')
-
-    if not os.path.isdir(gpar.storelistdir):
-        try:
-            os.makedirs(gpar.storelistdir, 0o755)
-        except OSError as e:
-            exit(3, e)
+    for cmd in (('wmctrl', '-h'), ('xprop', '-version')):
+        rc, msg = test_command(*cmd)
+        if rc:
+            exit(2, msg)
 
     disp = {
         'store': store,
