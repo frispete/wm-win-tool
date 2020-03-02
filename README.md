@@ -43,7 +43,7 @@ the latest session store [default], -2 for the second latest...).
 
 The bracket option just matches the part of the window title in square
 brackets. This is most useful in conjunction with Firefox and the
-[Window Titler addon](https://github.com/tpamula/webextension-window-title).
+[Window Titler addon](https://github.com/tpamula/webextension-window-titler).
 
 Example Usage
 -------------
