@@ -12,6 +12,7 @@ description = 'Store and restore desktops, geometries and shaded state of select
 pkgversion = None
 author = None
 license = None
+homepage = None
 min_python = (3, 3)
 
 
@@ -36,6 +37,7 @@ if sys.version_info < min_python:
 # determine package meta data
 with open(pkgfile_py, 'r') as fd:
     data = fd.read()
+    homepage = tag_value('homepage', data)
     license = tag_value('license', data)
     pkgversion = tag_value('version', data)
     author_email = tag_value('author', data)
@@ -59,7 +61,7 @@ setup_params = dict(
     description = description,
     long_description = long_description,
     long_description_content_type = long_description_content_type,
-    url = 'https://github.com/frispete/' + pkgname,
+    url = homepage,
     license = license,
     # entry points don't like python modules containing dashes :-(
     py_modules = [pkgfile],
