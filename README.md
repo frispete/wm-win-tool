@@ -62,11 +62,11 @@ Example Usage
 -------------
 Casual approach to restore your Firefox session:
 ```
-wm-win-tool -bc Navigator.Firefox store
+wm-win-tool -vc Navigator.Firefox store
 ```
 will save every Firefox window, and
 ```
-wm-win-tool -bc Navigator.Firefox restore
+wm-win-tool -vc Navigator.Firefox restore
 ```
 will restore all recognized windows. The only downside is, that the window
 titles must match **exactly** to be restored correctly. So better make sure to
