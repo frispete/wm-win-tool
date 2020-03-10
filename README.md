@@ -60,10 +60,23 @@ useful in conjunction with Firefox and the
 
 Example Usage
 -------------
-In order to save your Firefox sessions: install the `Window Titler addon` and
-supply all windows with a **unique** title, that should appear in square
-brackets in front of the window title, while the normal window title changes
-depending on which tab is actived.
+Casual approach to restore your Firefox session:
+```
+wm-win-tool -bc Navigator.Firefox store
+```
+will save every Firefox window, and
+```
+wm-win-tool -bc Navigator.Firefox restore
+```
+will restore all recognized windows. The only downside is, that the window
+titles must match **exactly** to be restored correctly. So better make sure to
+run this tool right before leaving the session.
+
+A more robust approach to the issue in question: install the
+`Window Titler addon` and supply all windows, that you want to have managed
+with a **unique** title, that appears in square brackets in front of the
+window title. This provides a static title, independent from which tab is
+actived.
 
 Now saving a session is as easy as:
 ```
@@ -106,6 +119,11 @@ setup.
 
 Final notes
 -----------
+There are good chances, that the Firefox issue is fixed with Version 75. Hooray.
+Let's hope for the best. If all goes well, this tool provides a nice way to
+**validate** the final fix. If all windows match, it will not perform any action
+on (verbose) restore. :wink:
+
 The commands `store` and `restore` could be implicitly triggered, when executed
 via symlinks to `wm-win-tool`, eg.:
 ```
@@ -114,7 +132,7 @@ $ ln -s wm-win-tool wm-win-store
 $ ln -s wm-win-tool wm-win-restore
 ```
 These operation modes come with some hardcoded defaults: `--bracket` and
-`--verbose` for the most usual usage pattern. If that's not enough, a config
+`--verbose` for the most usual usage patterns. If that's not enough, a config
 file option might be useful (TBD).
 
 The session data is saved in `~/local/share/wm-win-tool`.
