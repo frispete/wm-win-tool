@@ -60,7 +60,7 @@ License: %(license)s
 # vim:set et ts=8 sw=4:
 #
 
-__version__ = '0.1.5'
+__version__ = '0.1.6'
 __author__ = 'Hans-Peter Jansen <hpj@urpla.net>'
 __license__ = 'GNU GPL 2 - see https://www.gnu.org/licenses/gpl2.txt for details'
 __homepage__ = 'https://github.com/frispete/wm-win-tool'
@@ -140,9 +140,12 @@ def setup_logging(loglevel):
 
 
 def natural_sort_key(s, case_insensitive = True):
-    for sl in '[]', '()', '{}', '""', "''":
-        if s[0] == sl[0] and s[-1] == sl[-1]:
-            s = s[1:-1]
+    try:
+        for sl in '[]', '()', '{}', '""', "''":
+            if s[0] == sl[0] and s[-1] == sl[-1]:
+                s = s[1:-1]
+    except IndexError:
+        pass
     text_case = lambda t: t.lower() if case_insensitive else t
     return [int(text) if text.isdigit() else locale.strxfrm(text_case(text))
             for text in re.split('([0-9]+)', s)]
