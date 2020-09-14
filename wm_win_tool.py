@@ -569,7 +569,8 @@ def store(args):
     '''store geometry of selected windows'''
     curlist = fetch_winlist()
     if not curlist:
-        exit(3, 'no match')
+        log.debug('no match for selected windows')
+        exit(3)
     # check duplicate list
     try:
         wmlstfn = store_filelist(1).pop()
